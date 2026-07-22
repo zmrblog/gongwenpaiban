@@ -9,109 +9,59 @@ import sys
 import os
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QTextEdit, QFileDialog, QMessageBox,
-    QDialog, QFormLayout, QLineEdit, QComboBox, QSpinBox,
-    QDoubleSpinBox, QCheckBox, QTabWidget, QGridLayout, QGroupBox,
-    QScrollArea, QFrame, QSpacerItem, QSizePolicy
+    QPushButton, QLabel, QFileDialog, QMessageBox,
+    QLineEdit, QComboBox,
+    QDoubleSpinBox, QCheckBox, QGridLayout, QGroupBox,
+    QScrollArea, QFrame, QSizePolicy
 )
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QFont, QIcon, QColor, QDragEnterEvent, QDropEvent
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QFont, QIcon
 
 import gongwen_core as core
 
 
-VERSION = "1.0.0"
+VERSION = "v0.1.1"
 
 
 # ============================================================
-# 设置对话框
+# 设置面板（平铺展开，无弹窗）
 # ============================================================
 
-class SettingsDialog(QDialog):
-    """设置对话框"""
+class SettingsPanel(QWidget):
+    """设置面板 - 所有设置项平铺展开在主页面"""
+
+    configChanged = pyqtSignal()
 
     def __init__(self, config, parent=None):
         super().__init__(parent)
         self.config = config
         self._widgets = {}
-        self.setWindowTitle("设置")
-        self.setModal(True)
-        self.setMinimumWidth(640)
-        self.setMinimumHeight(560)
         self._build_ui()
         self._load_config()
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
-
-        # 标题栏
-        header = QHBoxLayout()
-        title = QLabel("设置")
-        title.setStyleSheet("font-size: 17px; font-weight: 600; color: #111827;")
-        header.addWidget(title)
-        header.addStretch()
-        btn_close = QPushButton("×")
-        btn_close.setFixedSize(32, 32)
-        btn_close.setStyleSheet(
-            "QPushButton { border: none; border-radius: 6px; "
-            "font-size: 16px; color: #6b7280; }"
-            "QPushButton:hover { background: #f3f4f6; color: #111827; }"
-        )
-        btn_close.clicked.connect(self.accept)
-        header.addWidget(btn_close)
-        layout.addLayout(header)
-
-        # 滚动区域
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        scroll_content = QWidget()
-        scroll_layout = QVBoxLayout(scroll_content)
-        scroll_layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(20, 10, 20, 20)
+        layout.setSpacing(16)
 
         # 页面边距
-        scroll_layout.addWidget(self._create_margins_section())
+        layout.addWidget(self._create_margins_section())
         # 标题设置
-        scroll_layout.addWidget(self._create_title_section())
+        layout.addWidget(self._create_title_section())
         # 正文设置
-        scroll_layout.addWidget(self._create_body_section())
+        layout.addWidget(self._create_body_section())
         # 高级设置
-        scroll_layout.addWidget(self._create_advanced_section())
+        layout.addWidget(self._create_advanced_section())
         # 特殊选项
-        scroll_layout.addWidget(self._create_special_section())
+        layout.addWidget(self._create_special_section())
         # 版头设置
-        scroll_layout.addWidget(self._create_header_section())
+        layout.addWidget(self._create_header_section())
         # 版记设置
-        scroll_layout.addWidget(self._create_footer_section())
+        layout.addWidget(self._create_footer_section())
         # 页码设置
-        scroll_layout.addWidget(self._create_page_number_section())
+        layout.addWidget(self._create_page_number_section())
 
-        scroll_layout.addStretch()
-        scroll.setWidget(scroll_content)
-        layout.addWidget(scroll)
-
-        # 底部按钮
-        footer = QHBoxLayout()
-        btn_reset = QPushButton("恢复默认")
-        btn_reset.setStyleSheet(
-            "QPushButton { background: #fef2f2; color: #dc2626; "
-            "border: none; border-radius: 6px; padding: 7px 16px; "
-            "font-size: 13px; font-weight: 500; }"
-            "QPushButton:hover { background: #fee2e2; }"
-        )
-        btn_reset.clicked.connect(self._reset_to_default)
-        footer.addWidget(btn_reset)
-        footer.addStretch()
-        btn_close2 = QPushButton("关闭")
-        btn_close2.setStyleSheet(
-            "QPushButton { background: #f3f4f6; color: #374151; "
-            "border: none; border-radius: 6px; padding: 7px 16px; "
-            "font-size: 13px; font-weight: 500; }"
-            "QPushButton:hover { background: #e5e7eb; }"
-        )
-        btn_close2.clicked.connect(self.accept)
-        footer.addWidget(btn_close2)
-        layout.addLayout(footer)
+        layout.addStretch()
 
     def _create_section_title(self, text):
         label = QLabel(text)
@@ -123,12 +73,9 @@ class SettingsDialog(QDialog):
         return label
 
     def _create_margins_section(self):
-        group = QGroupBox()
-        group.setTitle("")
+        group = self._create_group_box("页面边距")
         layout = QVBoxLayout(group)
-        layout.setContentsMargins(0, 10, 0, 10)
-
-        layout.addWidget(self._create_section_title("页面边距"))
+        layout.setContentsMargins(16, 20, 16, 16)
 
         grid = QGridLayout()
         grid.setSpacing(10)
@@ -138,7 +85,7 @@ class SettingsDialog(QDialog):
         for i, (key, label_text) in enumerate(zip(margins, labels)):
             lbl = QLabel(label_text)
             lbl.setStyleSheet("font-size: 12px; color: #6b7280;")
-            grid.addWidget(lbl, i // 2, i % 2 * 2)
+            grid.addWidget(lbl, i // 3, i % 3 * 2)
 
             spin = QDoubleSpinBox()
             spin.setRange(0, 10)
@@ -148,23 +95,21 @@ class SettingsDialog(QDialog):
                 "QDoubleSpinBox { padding: 6px 8px; border: 1px solid #d1d5db; "
                 "border-radius: 6px; font-size: 13px; }"
             )
-            grid.addWidget(spin, i // 2, i % 2 * 2 + 1)
+            spin.valueChanged.connect(self._on_changed)
+            grid.addWidget(spin, i // 3, i % 3 * 2 + 1)
             self._widgets[f'margin_{key}'] = spin
 
         layout.addLayout(grid)
         return group
 
     def _create_title_section(self):
-        group = QGroupBox()
+        group = self._create_group_box("公文标题")
         layout = QVBoxLayout(group)
-        layout.setContentsMargins(0, 10, 0, 10)
-
-        layout.addWidget(self._create_section_title("公文标题"))
+        layout.setContentsMargins(16, 20, 16, 16)
 
         grid = QGridLayout()
         grid.setSpacing(10)
 
-        # 字体
         lbl = QLabel("中文字体")
         lbl.setStyleSheet("font-size: 12px; color: #6b7280;")
         grid.addWidget(lbl, 0, 0)
@@ -172,7 +117,6 @@ class SettingsDialog(QDialog):
         grid.addWidget(combo, 0, 1)
         self._widgets['title_font'] = combo
 
-        # 字号
         lbl2 = QLabel("字号")
         lbl2.setStyleSheet("font-size: 12px; color: #6b7280;")
         grid.addWidget(lbl2, 1, 0)
@@ -184,10 +128,10 @@ class SettingsDialog(QDialog):
             "QComboBox { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        size_combo.currentIndexChanged.connect(self._on_changed)
         grid.addWidget(size_combo, 1, 1)
         self._widgets['title_size'] = size_combo
 
-        # 行距
         lbl3 = QLabel("行距")
         lbl3.setStyleSheet("font-size: 12px; color: #6b7280;")
         grid.addWidget(lbl3, 2, 0)
@@ -198,6 +142,7 @@ class SettingsDialog(QDialog):
             "QComboBox { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        spacing_combo.currentIndexChanged.connect(self._on_changed)
         grid.addWidget(spacing_combo, 2, 1)
         self._widgets['title_spacing'] = spacing_combo
 
@@ -205,16 +150,13 @@ class SettingsDialog(QDialog):
         return group
 
     def _create_body_section(self):
-        group = QGroupBox()
+        group = self._create_group_box("正文格式")
         layout = QVBoxLayout(group)
-        layout.setContentsMargins(0, 10, 0, 10)
-
-        layout.addWidget(self._create_section_title("正文格式"))
+        layout.setContentsMargins(16, 20, 16, 16)
 
         grid = QGridLayout()
         grid.setSpacing(10)
 
-        # 中文字体
         lbl = QLabel("中文字体")
         lbl.setStyleSheet("font-size: 12px; color: #6b7280;")
         grid.addWidget(lbl, 0, 0)
@@ -222,7 +164,6 @@ class SettingsDialog(QDialog):
         grid.addWidget(combo, 0, 1)
         self._widgets['body_font'] = combo
 
-        # 英数字体
         lbl2 = QLabel("英数字体")
         lbl2.setStyleSheet("font-size: 12px; color: #6b7280;")
         grid.addWidget(lbl2, 1, 0)
@@ -230,7 +171,6 @@ class SettingsDialog(QDialog):
         grid.addWidget(combo2, 1, 1)
         self._widgets['body_ascii_font'] = combo2
 
-        # 字号
         lbl3 = QLabel("字号")
         lbl3.setStyleSheet("font-size: 12px; color: #6b7280;")
         grid.addWidget(lbl3, 2, 0)
@@ -242,10 +182,10 @@ class SettingsDialog(QDialog):
             "QComboBox { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        size_combo.currentIndexChanged.connect(self._on_changed)
         grid.addWidget(size_combo, 2, 1)
         self._widgets['body_size'] = size_combo
 
-        # 行距
         lbl4 = QLabel("行距")
         lbl4.setStyleSheet("font-size: 12px; color: #6b7280;")
         grid.addWidget(lbl4, 3, 0)
@@ -256,10 +196,10 @@ class SettingsDialog(QDialog):
             "QComboBox { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        spacing_combo.currentIndexChanged.connect(self._on_changed)
         grid.addWidget(spacing_combo, 3, 1)
         self._widgets['body_spacing'] = spacing_combo
 
-        # 首行缩进
         lbl5 = QLabel("首行缩进")
         lbl5.setStyleSheet("font-size: 12px; color: #6b7280;")
         grid.addWidget(lbl5, 4, 0)
@@ -270,10 +210,10 @@ class SettingsDialog(QDialog):
             "QComboBox { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        indent_combo.currentIndexChanged.connect(self._on_changed)
         grid.addWidget(indent_combo, 4, 1)
         self._widgets['body_indent'] = indent_combo
 
-        # 提示
         hint = QLabel("正文行距和首行缩进同时应用于三级标题、四级标题、附件说明和成文日期")
         hint.setStyleSheet("font-size: 12px; color: #9ca3af; margin-top: 6px;")
         hint.setWordWrap(True)
@@ -282,30 +222,21 @@ class SettingsDialog(QDialog):
         return group
 
     def _create_advanced_section(self):
-        group = QGroupBox()
+        group = self._create_group_box("高级设置（标题字体）")
         layout = QVBoxLayout(group)
-        layout.setContentsMargins(0, 10, 0, 10)
-
-        layout.addWidget(self._create_section_title("高级设置（标题字体）"))
+        layout.setContentsMargins(16, 20, 16, 16)
 
         hint = QLabel("一级、二级、三级标题统一在此配置中文字体、英数字体和字号")
         hint.setStyleSheet("font-size: 12px; color: #9ca3af;")
         hint.setWordWrap(True)
         layout.addWidget(hint)
 
-        # 三列布局
         for heading_key, heading_label in [('h1', '一级标题'), ('h2', '二级标题'), ('h3', '三级标题')]:
-            sub_group = QGroupBox(heading_label)
-            sub_group.setStyleSheet(
-                "QGroupBox { border: 1px solid #e5e7eb; border-radius: 8px; "
-                "margin-top: 12px; padding-top: 8px; }"
-                "QGroupBox::title { color: #374151; font-weight: 500; "
-                "subcontrol-origin: margin; left: 10px; padding: 0 5px; }"
-            )
+            sub_group = self._create_group_box(heading_label)
             sub_layout = QGridLayout(sub_group)
             sub_layout.setSpacing(8)
+            sub_layout.setContentsMargins(12, 16, 12, 12)
 
-            # 中文字体
             lbl = QLabel("中文字体")
             lbl.setStyleSheet("font-size: 12px; color: #6b7280;")
             sub_layout.addWidget(lbl, 0, 0)
@@ -313,7 +244,6 @@ class SettingsDialog(QDialog):
             sub_layout.addWidget(combo, 0, 1)
             self._widgets[f'{heading_key}_font'] = combo
 
-            # 英数字体
             lbl2 = QLabel("英数字体")
             lbl2.setStyleSheet("font-size: 12px; color: #6b7280;")
             sub_layout.addWidget(lbl2, 1, 0)
@@ -321,7 +251,6 @@ class SettingsDialog(QDialog):
             sub_layout.addWidget(combo2, 1, 1)
             self._widgets[f'{heading_key}_ascii_font'] = combo2
 
-            # 字号
             lbl3 = QLabel("字号")
             lbl3.setStyleSheet("font-size: 12px; color: #6b7280;")
             sub_layout.addWidget(lbl3, 2, 0)
@@ -333,6 +262,7 @@ class SettingsDialog(QDialog):
                 "QComboBox { padding: 6px 8px; border: 1px solid #d1d5db; "
                 "border-radius: 6px; font-size: 13px; }"
             )
+            size_combo.currentIndexChanged.connect(self._on_changed)
             sub_layout.addWidget(size_combo, 2, 1)
             self._widgets[f'{heading_key}_size'] = size_combo
 
@@ -341,46 +271,41 @@ class SettingsDialog(QDialog):
         return group
 
     def _create_special_section(self):
-        group = QGroupBox()
+        group = self._create_group_box("特殊选项")
         layout = QVBoxLayout(group)
-        layout.setContentsMargins(0, 10, 0, 10)
+        layout.setContentsMargins(16, 20, 16, 16)
 
-        layout.addWidget(self._create_section_title("特殊选项"))
-
-        # 正文段落首句加粗
         cb1 = QCheckBox("正文段落首句加粗")
         cb1.setStyleSheet("font-size: 13px; color: #374151;")
+        cb1.stateChanged.connect(self._on_changed)
         layout.addWidget(cb1)
         self._widgets['bold_first_sentence'] = cb1
 
-        # 三级小标题加粗
         cb2 = QCheckBox("三级小标题加粗")
         cb2.setStyleSheet("font-size: 13px; color: #374151;")
+        cb2.stateChanged.connect(self._on_changed)
         layout.addWidget(cb2)
         self._widgets['bold_heading3'] = cb2
 
-        # 加盖印章
         cb3 = QCheckBox("加盖印章")
         cb3.setStyleSheet("font-size: 13px; color: #374151;")
+        cb3.stateChanged.connect(self._on_changed)
         layout.addWidget(cb3)
         self._widgets['has_stamp'] = cb3
 
         return group
 
     def _create_header_section(self):
-        group = QGroupBox()
+        group = self._create_group_box("版头与版记 - 版头")
         layout = QVBoxLayout(group)
-        layout.setContentsMargins(0, 10, 0, 10)
+        layout.setContentsMargins(16, 20, 16, 16)
 
-        layout.addWidget(self._create_section_title("版头与版记 - 版头"))
-
-        # 启用版头
         cb = QCheckBox("启用版头")
         cb.setStyleSheet("font-size: 13px; color: #374151;")
+        cb.stateChanged.connect(self._on_changed)
         layout.addWidget(cb)
         self._widgets['header_enabled'] = cb
 
-        # 发文机关标志
         grid = QGridLayout()
         grid.setSpacing(10)
 
@@ -393,6 +318,7 @@ class SettingsDialog(QDialog):
             "QLineEdit { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        le1.textChanged.connect(self._on_changed)
         grid.addWidget(le1, 0, 1)
         self._widgets['header_org_name'] = le1
 
@@ -405,6 +331,7 @@ class SettingsDialog(QDialog):
             "QLineEdit { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        le2.textChanged.connect(self._on_changed)
         grid.addWidget(le2, 1, 1)
         self._widgets['header_doc_number'] = le2
 
@@ -417,6 +344,7 @@ class SettingsDialog(QDialog):
             "QLineEdit { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        le3.textChanged.connect(self._on_changed)
         grid.addWidget(le3, 2, 1)
         self._widgets['header_signer'] = le3
 
@@ -424,15 +352,13 @@ class SettingsDialog(QDialog):
         return group
 
     def _create_footer_section(self):
-        group = QGroupBox()
+        group = self._create_group_box("版头与版记 - 版记")
         layout = QVBoxLayout(group)
-        layout.setContentsMargins(0, 10, 0, 10)
+        layout.setContentsMargins(16, 20, 16, 16)
 
-        layout.addWidget(self._create_section_title("版头与版记 - 版记"))
-
-        # 启用版记
         cb = QCheckBox("启用版记")
         cb.setStyleSheet("font-size: 13px; color: #374151;")
+        cb.stateChanged.connect(self._on_changed)
         layout.addWidget(cb)
         self._widgets['footer_enabled'] = cb
 
@@ -447,6 +373,7 @@ class SettingsDialog(QDialog):
             "QLineEdit { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        le1.textChanged.connect(self._on_changed)
         grid.addWidget(le1, 0, 1)
         self._widgets['footer_cc'] = le1
 
@@ -458,6 +385,7 @@ class SettingsDialog(QDialog):
             "QLineEdit { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        le2.textChanged.connect(self._on_changed)
         grid.addWidget(le2, 1, 1)
         self._widgets['footer_printer'] = le2
 
@@ -470,6 +398,7 @@ class SettingsDialog(QDialog):
             "QLineEdit { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        le3.textChanged.connect(self._on_changed)
         grid.addWidget(le3, 2, 1)
         self._widgets['footer_print_date'] = le3
 
@@ -477,15 +406,13 @@ class SettingsDialog(QDialog):
         return group
 
     def _create_page_number_section(self):
-        group = QGroupBox()
+        group = self._create_group_box("页码")
         layout = QVBoxLayout(group)
-        layout.setContentsMargins(0, 10, 0, 10)
+        layout.setContentsMargins(16, 20, 16, 16)
 
-        layout.addWidget(self._create_section_title("页码"))
-
-        # 启用页码
         cb = QCheckBox("添加页码")
         cb.setStyleSheet("font-size: 13px; color: #374151;")
+        cb.stateChanged.connect(self._on_changed)
         layout.addWidget(cb)
         self._widgets['show_page_number'] = cb
 
@@ -502,6 +429,7 @@ class SettingsDialog(QDialog):
             "QComboBox { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        combo1.currentIndexChanged.connect(self._on_changed)
         grid.addWidget(combo1, 0, 1)
         self._widgets['page_number_font'] = combo1
 
@@ -515,14 +443,26 @@ class SettingsDialog(QDialog):
             "QComboBox { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        combo2.currentIndexChanged.connect(self._on_changed)
         grid.addWidget(combo2, 1, 1)
         self._widgets['page_number_style'] = combo2
 
         layout.addLayout(grid)
         return group
 
+    def _create_group_box(self, title):
+        group = QGroupBox(title)
+        group.setStyleSheet(
+            "QGroupBox { background: #fff; border: 1px solid #e5e7eb; "
+            "border-radius: 8px; margin-top: 14px; font-size: 14px; "
+            "font-weight: 600; color: #374151; padding-top: 8px; }"
+            "QGroupBox::title { subcontrol-origin: margin; "
+            "subcontrol-position: top left; left: 16px; padding: 0 8px; "
+            "background: #fff; }"
+        )
+        return group
+
     def _create_font_combo(self, fonts):
-        """创建字体选择下拉框"""
         combo = QComboBox()
         combo.setEditable(True)
         for label, value in fonts:
@@ -531,10 +471,15 @@ class SettingsDialog(QDialog):
             "QComboBox { padding: 6px 8px; border: 1px solid #d1d5db; "
             "border-radius: 6px; font-size: 13px; }"
         )
+        combo.currentIndexChanged.connect(self._on_changed)
+        combo.editTextChanged.connect(self._on_changed)
         return combo
 
+    def _on_changed(self):
+        """设置变化时发出信号"""
+        self.configChanged.emit()
+
     def _load_config(self):
-        """将配置加载到控件"""
         cfg = self.config
 
         # 边距
@@ -586,7 +531,6 @@ class SettingsDialog(QDialog):
         self._set_combo_by_data(self._widgets['page_number_style'], cfg['specialOptions']['pageNumberStyle'])
 
     def _set_combo_by_value(self, combo, value):
-        """通过 value 设置下拉框选中项"""
         idx = combo.findData(value)
         if idx >= 0:
             combo.setCurrentIndex(idx)
@@ -594,18 +538,15 @@ class SettingsDialog(QDialog):
             combo.setEditText(value)
 
     def _set_combo_by_data(self, combo, data):
-        """通过 data 设置下拉框选中项"""
         idx = combo.findData(data)
         if idx >= 0:
             combo.setCurrentIndex(idx)
 
-    def _reset_to_default(self):
-        """恢复默认配置"""
+    def reset_to_default(self):
         self.config = core.normalize_config(core.get_default_config())
         self._load_config()
 
     def get_config(self):
-        """从控件收集配置"""
         cfg = core.get_default_config()
 
         # 边距
@@ -659,82 +600,6 @@ class SettingsDialog(QDialog):
 
 
 # ============================================================
-# 编辑器面板
-# ============================================================
-
-class EditorPanel(QWidget):
-    """编辑器面板（左侧）"""
-
-    textChanged = pyqtSignal(str)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setAcceptDrops(True)
-        self._build_ui()
-
-    def _build_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-
-        # 头部
-        header = QFrame()
-        header.setStyleSheet(
-            "QFrame { background: #fff; border-bottom: 1px solid #e5e7eb; }"
-        )
-        header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(16, 12, 16, 12)
-
-        label = QLabel("正文")
-        label.setStyleSheet("font-size: 15px; font-weight: 600; color: #1f2937;")
-        header_layout.addWidget(label)
-
-        hint = QLabel("首行自动识别为标题，后续自动识别各级标题")
-        hint.setStyleSheet("font-size: 12px; color: #9ca3af;")
-        header_layout.addWidget(hint)
-        header_layout.addStretch()
-
-        layout.addWidget(header)
-
-        # 文本编辑区
-        self.text_edit = QTextEdit()
-        self.text_edit.setPlaceholderText("粘贴公文正文 或 拖入文件")
-        self.text_edit.setStyleSheet(
-            "QTextEdit { border: none; background: #fafafa; "
-            "font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif; "
-            "font-size: 14px; line-height: 1.8; color: #374151; padding: 16px; }"
-        )
-        self.text_edit.textChanged.connect(self._on_text_changed)
-        layout.addWidget(self.text_edit)
-
-    def _on_text_changed(self):
-        self.textChanged.emit(self.text_edit.toPlainText())
-
-    def set_text(self, text):
-        self.text_edit.setPlainText(text)
-
-    def get_text(self):
-        return self.text_edit.toPlainText()
-
-    def clear(self):
-        self.text_edit.clear()
-
-    # 拖拽支持
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event: QDropEvent):
-        urls = event.mimeData().urls()
-        if urls:
-            file_path = urls[0].toLocalFile()
-            ext = os.path.splitext(file_path)[1].lower()
-            if ext in ('.docx', '.txt'):
-                # 发出信号让主窗口处理导入
-                self.parent().import_file(file_path)
-
-
-# ============================================================
 # 主窗口
 # ============================================================
 
@@ -744,15 +609,12 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.config = core.load_config()
-        self.saved_text = core.load_text()
-        self.settings_dialog = None
-        self._setup_autosave()
+        self.imported_text = ''
         self._build_ui()
-        self._load_saved_content()
 
     def _build_ui(self):
-        self.setWindowTitle("公文排版工具 - GB/T 9704")
-        self.setMinimumSize(1024, 768)
+        self.setWindowTitle(f"公文排版工具 {VERSION}")
+        self.setMinimumSize(900, 700)
 
         # 设置图标
         self._set_window_icon()
@@ -764,24 +626,35 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # 工具栏
+        # 顶部工具栏（导入/清空/导出）
         main_layout.addWidget(self._build_toolbar())
 
-        # 编辑器
-        self.editor = EditorPanel()
-        self.editor.textChanged.connect(self._on_text_changed)
-        main_layout.addWidget(self.editor, 1)
+        # 导入状态提示
+        self.status_label = QLabel("未导入文件")
+        self.status_label.setStyleSheet(
+            "font-size: 13px; color: #6b7280; padding: 8px 20px; "
+            "background: #fafafa; border-bottom: 1px solid #e5e7eb;"
+        )
+        main_layout.addWidget(self.status_label)
+
+        # 下方：设置面板（可滚动）
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setStyleSheet("QScrollArea { background: #f9fafb; }")
+
+        self.settings_panel = SettingsPanel(self.config)
+        self.settings_panel.configChanged.connect(self._on_config_changed)
+        scroll.setWidget(self.settings_panel)
+
+        main_layout.addWidget(scroll, 1)
 
         # 应用整体样式
-        self.setStyleSheet(
-            "QMainWindow { background: #fff; }"
-        )
+        self.setStyleSheet("QMainWindow { background: #fff; }")
 
-        # 更新按钮状态（编辑器已创建）
         self._update_buttons_state()
 
     def _set_window_icon(self):
-        """设置窗口图标（公文风格红色图标）"""
         try:
             icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icon.ico')
             if os.path.exists(icon_path):
@@ -790,7 +663,6 @@ class MainWindow(QMainWindow):
             pass
 
     def _build_toolbar(self):
-        """构建工具栏"""
         toolbar = QFrame()
         toolbar.setFixedHeight(56)
         toolbar.setStyleSheet(
@@ -809,9 +681,9 @@ class MainWindow(QMainWindow):
         title.setStyleSheet("font-size: 18px; font-weight: 700; color: #111827;")
         left.addWidget(title)
 
-        version = QLabel(VERSION)
-        version.setStyleSheet("font-size: 13px; font-weight: 600; color: #64748b;")
-        left.addWidget(version)
+        version_label = QLabel(VERSION)
+        version_label.setStyleSheet("font-size: 13px; font-weight: 600; color: #64748b;")
+        left.addWidget(version_label)
 
         layout.addLayout(left)
         layout.addStretch()
@@ -820,21 +692,16 @@ class MainWindow(QMainWindow):
         right = QHBoxLayout()
         right.setSpacing(12)
 
-        # 统计
-        self.stats_label = QLabel("")
-        self.stats_label.setStyleSheet("font-size: 13px; color: #6b7280;")
-        right.addWidget(self.stats_label)
-
-        # 设置按钮
-        btn_settings = QPushButton("⚙ 设置")
-        btn_settings.setStyleSheet(
+        # 恢复默认按钮
+        btn_reset = QPushButton("恢复默认")
+        btn_reset.setStyleSheet(
             "QPushButton { background: #f3f4f6; color: #374151; border: none; "
             "border-radius: 6px; padding: 8px 16px; font-size: 14px; "
             "font-weight: 500; }"
             "QPushButton:hover { background: #e5e7eb; }"
         )
-        btn_settings.clicked.connect(self._open_settings)
-        right.addWidget(btn_settings)
+        btn_reset.clicked.connect(self._reset_config)
+        right.addWidget(btn_reset)
 
         # 导入按钮
         btn_import = QPushButton("导入文件")
@@ -843,7 +710,6 @@ class MainWindow(QMainWindow):
             "border-radius: 6px; padding: 8px 16px; font-size: 14px; "
             "font-weight: 500; }"
             "QPushButton:hover { background: #dbeafe; }"
-            "QPushButton:disabled { background: #f3f4f6; color: #9ca3af; }"
         )
         btn_import.clicked.connect(self._import_file_dialog)
         right.addWidget(btn_import)
@@ -875,53 +741,29 @@ class MainWindow(QMainWindow):
         layout.addLayout(right)
         return toolbar
 
-    def _load_saved_content(self):
-        """加载保存的文本"""
-        if self.saved_text:
-            self.editor.set_text(self.saved_text)
-
-    def _setup_autosave(self):
-        """设置自动保存"""
-        self._save_timer = QTimer()
-        self._save_timer.setSingleShot(True)
-        self._save_timer.timeout.connect(self._save_content)
-        self._save_timer.setInterval(500)
-
-    def _on_text_changed(self, text):
-        """文本变化时更新状态"""
-        self._update_buttons_state()
-        self._update_stats(text)
-
-        # 防抖保存
-        self._save_timer.start()
-
     def _update_buttons_state(self):
-        """更新按钮状态"""
-        has_text = bool(self.editor.get_text().strip())
+        has_text = bool(self.imported_text.strip())
         self.btn_clear.setEnabled(has_text)
         self.btn_export.setEnabled(has_text)
 
-    def _update_stats(self, text):
-        """更新统计信息"""
-        if not text.strip():
-            self.stats_label.setText("")
-            return
-        lines = [l for l in text.split('\n') if l.strip()]
-        self.stats_label.setText(f"{len(lines)} 段")
+    def _on_config_changed(self):
+        """设置变化时实时保存配置"""
+        self.config = self.settings_panel.get_config()
+        core.save_config(self.config)
 
-    def _save_content(self):
-        """保存内容"""
-        core.save_text(self.editor.get_text())
-
-    def _open_settings(self):
-        """打开设置对话框"""
-        dialog = SettingsDialog(self.config, self)
-        if dialog.exec_() == QDialog.Accepted:
-            self.config = dialog.get_config()
+    def _reset_config(self):
+        reply = QMessageBox.question(
+            self, "确认恢复默认",
+            "确定要将所有设置恢复为默认值吗？",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            self.settings_panel.reset_to_default()
+            self.config = self.settings_panel.get_config()
             core.save_config(self.config)
 
     def _import_file_dialog(self):
-        """导入文件对话框"""
         file_path, _ = QFileDialog.getOpenFileName(
             self, "导入文件", "",
             "Word 文档 (*.docx);;文本文件 (*.txt);;所有文件 (*)"
@@ -930,50 +772,46 @@ class MainWindow(QMainWindow):
             self.import_file(file_path)
 
     def import_file(self, file_path):
-        """导入文件"""
         try:
             text = core.import_file(file_path)
-            if self.editor.get_text().strip():
-                reply = QMessageBox.question(
-                    self, "确认导入",
-                    "导入文件将覆盖当前内容，是否继续？",
-                    QMessageBox.Yes | QMessageBox.No,
-                    QMessageBox.No
-                )
-                if reply != QMessageBox.Yes:
-                    return
-            self.editor.set_text(text)
-            self._save_content()
+            self.imported_text = text
+            filename = os.path.basename(file_path)
+            self.status_label.setText(f"已导入：{filename}（{len([l for l in text.split(chr(10)) if l.strip()])} 段）")
+            self.status_label.setStyleSheet(
+                "font-size: 13px; color: #059669; padding: 8px 20px; "
+                "background: #ecfdf5; border-bottom: 1px solid #e5e7eb;"
+            )
             self._update_buttons_state()
-            self._update_stats(text)
         except Exception as e:
             QMessageBox.critical(self, "文件导入失败", str(e))
 
     def _clear_content(self):
-        """清空内容"""
         reply = QMessageBox.question(
             self, "确认清空",
-            "确定要清空所有内容吗？",
+            "确定要清空已导入的内容吗？",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
         if reply == QMessageBox.Yes:
-            self.editor.clear()
-            self._save_content()
+            self.imported_text = ''
+            self.status_label.setText("未导入文件")
+            self.status_label.setStyleSheet(
+                "font-size: 13px; color: #6b7280; padding: 8px 20px; "
+                "background: #fafafa; border-bottom: 1px solid #e5e7eb;"
+            )
             self._update_buttons_state()
 
     def _export_word(self):
-        """导出 Word"""
-        text = self.editor.get_text()
-        if not text.strip():
+        if not self.imported_text.strip():
             return
 
-        # 默认文件名
-        default_name = "公文.docx"
-        # 尝试从第一行获取标题
+        text = self.imported_text
+
+        # 默认文件名（从第一行获取标题 + 版本号）
+        default_name = f"公文_{VERSION}.docx"
         first_line = text.strip().split('\n')[0].strip()
         if first_line:
-            default_name = f"{first_line}.docx"
+            default_name = f"{first_line}_{VERSION}.docx"
 
         file_path, _ = QFileDialog.getSaveFileName(
             self, "导出 Word", default_name,
@@ -996,8 +834,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "导出失败", f"导出失败：\n{str(e)}")
 
     def closeEvent(self, event):
-        """关闭时保存"""
-        self._save_content()
+        self.config = self.settings_panel.get_config()
         core.save_config(self.config)
         event.accept()
 
@@ -1011,7 +848,6 @@ def main():
     app.setApplicationName("公文排版工具")
     app.setApplicationVersion(VERSION)
 
-    # 设置默认字体
     font = QFont("Microsoft YaHei", 9)
     app.setFont(font)
 
