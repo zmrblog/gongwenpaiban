@@ -20,7 +20,7 @@ from PyQt5.QtGui import QFont, QIcon, QColor, QDragEnterEvent, QDropEvent
 import gongwen_core as core
 
 
-VERSION = "v0.1.2"
+VERSION = "v0.1.3"
 
 
 # ============================================================
@@ -669,7 +669,6 @@ class EditorPanel(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setAcceptDrops(True)
         self._build_ui()
 
     def _build_ui(self):
@@ -698,6 +697,8 @@ class EditorPanel(QWidget):
 
         # 文本编辑区
         self.text_edit = QTextEdit()
+        # 禁用编辑器的拖拽接收，让事件冒泡到主窗口统一处理文件导入
+        self.text_edit.setAcceptDrops(False)
         self.text_edit.setPlaceholderText("粘贴公文正文 或 拖入文件")
         self.text_edit.setStyleSheet(
             "QTextEdit { border: none; background: #fafafa; "
@@ -718,20 +719,6 @@ class EditorPanel(QWidget):
 
     def clear(self):
         self.text_edit.clear()
-
-    # 拖拽支持
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event: QDropEvent):
-        urls = event.mimeData().urls()
-        if urls:
-            file_path = urls[0].toLocalFile()
-            ext = os.path.splitext(file_path)[1].lower()
-            if ext in ('.docx', '.txt'):
-                # 发出信号让主窗口处理导入
-                self.parent().import_file(file_path)
 
 
 # ============================================================
@@ -777,8 +764,33 @@ class MainWindow(QMainWindow):
             "QMainWindow { background: #fff; }"
         )
 
+        # 启用主窗口拖拽接收（整个窗口任意位置均可拖入文件导入）
+        self.setAcceptDrops(True)
+
         # 更新按钮状态（编辑器已创建）
         self._update_buttons_state()
+
+    # 拖拽文件导入支持
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            if urls:
+                ext = os.path.splitext(urls[0].toLocalFile())[1].lower()
+                if ext in ('.docx', '.txt'):
+                    event.acceptProposedAction()
+                    return
+        event.ignore()
+
+    def dropEvent(self, event: QDropEvent):
+        urls = event.mimeData().urls()
+        if urls:
+            file_path = urls[0].toLocalFile()
+            ext = os.path.splitext(file_path)[1].lower()
+            if ext in ('.docx', '.txt'):
+                self.import_file(file_path)
+                event.acceptProposedAction()
+                return
+        event.ignore()
 
     def _set_window_icon(self):
         """设置窗口图标（公文风格红色图标）"""
