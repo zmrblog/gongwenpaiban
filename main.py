@@ -20,7 +20,7 @@ from PyQt5.QtGui import QFont, QIcon, QColor, QDragEnterEvent, QDropEvent
 import gongwen_core as core
 
 
-VERSION = "v0.1.3"
+VERSION = "v0.1.4"
 
 
 # ============================================================

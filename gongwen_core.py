@@ -647,7 +647,7 @@ def _add_title(doc, title_node, config):
     font = config['title']['fontFamily']
     ascii_font = config['body']['asciiFontFamily']
     _add_run_with_font(p, title_node.content, font, ascii_font,
-                       config['title']['fontSize'], bold=True)
+                       config['title']['fontSize'], bold=False)
     # 标题与正文之间空一行
     _add_empty_paragraph(doc, config, count=1)
 
